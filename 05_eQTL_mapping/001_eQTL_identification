@@ -1,3 +1,4 @@
+# cis-eQTL mapping
 seq 1 18 | xargs -I {} -P 8 bash -c '
     OmiGA --mode cis \
         --genotype 02_genotype/sv_rmMiss_rmDup.filled \
@@ -10,10 +11,20 @@ seq 1 18 | xargs -I {} -P 8 bash -c '
         --threads 7 \
         --calcu-variant-threshold
 '
-#extract signf pairs
+
+
+# re-run multiple-testing using ACAT approach
+OmiGA --mode cis_mt \
+ --threads 16 \
+ --cis-file duodenum_cis_eqtl_joint/joint.cis_qtl.txt.gz \
+ --multiple-testing acat \
+ --prefix joint \
+ --output-dir duodenum_cis_eqtl_joint_mt
+
+# extract signf pairs
 Rscript extract_sig_pair.R joint 
 
-
+#Independent cis-QTL
 seq 1 18 | xargs -I {} -P 8 bash -c '
 	OmiGA --mode cis_independent  --genotype 02_genotype/joint  \
 		--phenotype 01_phenotype/omgia_liver.expression.bed.gz \
@@ -21,7 +32,7 @@ seq 1 18 | xargs -I {} -P 8 bash -c '
 		--covariates 03_covariant/Cov_liver.txt \
 		--dcovar-name sex \
 		--chrom {} \
-		--cis-file liver_cis_eqtl_joint/joint.cis_qtl.txt.gz \
+		--cis-file liver_cis_eqtl_joint_mt/joint.cis_qtl_mt.txt.gz \
 		--threads 7 --qtl-map-model a+A  \
 		--output-dir liver_condition_independ_cis_eqtl_joint \
 		--calcu-variant-threshold
