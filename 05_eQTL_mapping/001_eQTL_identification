@@ -22,6 +22,7 @@ OmiGA --mode cis_mt \
  --output-dir duodenum_cis_eqtl_joint_mt
 
 # extract signf pairs
+awk 'NR == 1 || $14 < 0.05' joint.cis_qtl_mt.txt > duodenum_eGene.txt
 Rscript extract_sig_pair.R joint 
 
 #Independent cis-QTL
