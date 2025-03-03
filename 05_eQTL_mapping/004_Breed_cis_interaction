@@ -11,14 +11,15 @@ seq 1 18 | xargs -I {} -P 8 bash -c '
         --chrom {} \
 		--no-add-interaction-to-covar \
 		--interaction-name LW \
-        --phenotype ../01_phenotype/omgia_liver.expression.bed.gz \
+        --phenotype ../01_phenotype/omgia_duodenum.expression.bed.gz \
         --prefix joint \
-        --covariates ../03_covariant/Cov_liver.txt \
-        --output-dir liver_lw_cis_interaction \
+        --covariates ../03_covariant/Cov_duodenum.txt \
+        --output-dir duodenum_lw_cis_interaction \
         --threads 7 \
+		--interaction breed_cov.txt \
+		--maf-threshold-interaction 0.01 \
         --calcu-variant-threshold
 '
-
 
 OmiGA --mode cis_mt \
  --threads 36 \
