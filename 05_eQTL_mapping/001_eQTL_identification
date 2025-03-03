@@ -1,10 +1,28 @@
-OmiGA --mode cis --genotype ../02_genotype/joint  \
---dcovar-name sex --phenotype ../01_phenotype/omgia_duodenum.expression.bed.gz  --prefix joint  \
---output-significant-qtls \
---covariates ../03_covariant/Cov_duodenum.txt --output-dir duodenum_cis_eqtl_joint --threads 36 --calcu-variant-threshold
+seq 1 18 | xargs -I {} -P 8 bash -c '
+    OmiGA --mode cis \
+        --genotype 02_genotype/sv_rmMiss_rmDup.filled \
+        --dcovar-name sex \
+        --chrom {} \
+        --phenotype 01_phenotype/omgia_liver.expression.bed.gz \
+        --prefix joint \
+        --covariates 03_covariant/Cov_liver.txt \
+        --output-dir liver_cis_eqtl_joint \
+        --threads 7 \
+        --calcu-variant-threshold
+'
+#extract signf pairs
+Rscript extract_sig_pair.R joint 
 
 
-OmiGA --mode cis_independent  --genotype ../02_genotype/joint  \
---dcovar-name sex --phenotype ../01_phenotype/omgia_duodenum.expression.bed.gz  --prefix joint  --covariates ../03_covariant/Cov_duodenum.txt \
---cis-file duodenum_cis_eqtl_joint/joint.cis_qtl.txt.gz --threads 36 --qtl-map-model a+A  \
---output-dir duodenum_condition_independ_cis_eqtl_joint --calcu-variant-threshold
+seq 1 18 | xargs -I {} -P 8 bash -c '
+	OmiGA --mode cis_independent  --genotype 02_genotype/joint  \
+		--phenotype 01_phenotype/omgia_liver.expression.bed.gz \
+		--prefix joint  \
+		--covariates 03_covariant/Cov_liver.txt \
+		--dcovar-name sex \
+		--chrom {} \
+		--cis-file liver_cis_eqtl_joint/joint.cis_qtl.txt.gz \
+		--threads 7 --qtl-map-model a+A  \
+		--output-dir liver_condition_independ_cis_eqtl_joint \
+		--calcu-variant-threshold
+'
