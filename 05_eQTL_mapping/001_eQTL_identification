@@ -1,0 +1,10 @@
+OmiGA --mode cis --genotype ../02_genotype/joint  \
+--dcovar-name sex --phenotype ../01_phenotype/omgia_duodenum.expression.bed.gz  --prefix joint  \
+--output-significant-qtls \
+--covariates ../03_covariant/Cov_duodenum.txt --output-dir duodenum_cis_eqtl_joint --threads 36 --calcu-variant-threshold
+
+
+OmiGA --mode cis_independent  --genotype ../02_genotype/joint  \
+--dcovar-name sex --phenotype ../01_phenotype/omgia_duodenum.expression.bed.gz  --prefix joint  --covariates ../03_covariant/Cov_duodenum.txt \
+--cis-file duodenum_cis_eqtl_joint/joint.cis_qtl.txt.gz --threads 36 --qtl-map-model a+A  \
+--output-dir duodenum_condition_independ_cis_eqtl_joint --calcu-variant-threshold
