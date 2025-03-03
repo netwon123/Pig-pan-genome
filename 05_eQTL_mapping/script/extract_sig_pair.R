@@ -4,7 +4,7 @@ ARGS <- commandArgs(trailingOnly = TRUE)
 tissue = ARGS[1]
 cat("Processing tissue: ", tissue, "...\n")
 signif_pair <- function(tissue){
-  fdrdf=fread(paste0("joint.cis_qtl_mt.txt.gz"))
+  fdrdf=fread(paste0("duodenum_eGene.txt"))
   fdrdf=fdrdf[,c("pheno_id", "pval_g1_threshold")]
   for (chr in c(1:18)){
     df=fread(paste0(tissue,".cis_qtl_pairs.", chr,".txt.gz"))
