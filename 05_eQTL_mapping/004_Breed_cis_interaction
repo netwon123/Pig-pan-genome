@@ -6,13 +6,15 @@ done
 
 seq 1 18 | xargs -I {} -P 8 bash -c '
     OmiGA --mode cis interactlon \
-        --genotype ../02_genotype/sv_rmMiss_rmDup.filled \
+        --genotype ../02_genotype/joint \
         --dcovar-name sex \
         --chrom {} \
+		--no-add-interaction-to-covar \
+		--interaction-name LW \
         --phenotype ../01_phenotype/omgia_liver.expression.bed.gz \
         --prefix joint \
         --covariates ../03_covariant/Cov_liver.txt \
-        --output-dir liver_drc_cis_interaction \
+        --output-dir liver_lw_cis_interaction \
         --threads 7 \
         --calcu-variant-threshold
 '
