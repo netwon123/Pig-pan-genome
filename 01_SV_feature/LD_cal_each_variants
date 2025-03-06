@@ -1,0 +1,12 @@
+python simple_vcf.py snp_sv.vcf snp_sv.simple.vcf
+
+#calculated the paired LD
+plink --vcf indel_sv_simple.vcf  \
+    --double-id \
+    --allow-extra-chr \
+    -r2 gz \
+    --ld-window 20 \
+    --ld-window-kb 1000 \
+    --ld-window-r2 0 \
+    --out LD_span_INDEL_SV --threads 36
+
