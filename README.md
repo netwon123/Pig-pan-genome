@@ -2,7 +2,6 @@
 
 ### **Table of contents**  
 
-### **Citation**  
 ### **Contacts**  
 
 - **Guoqiang Yi**（yiguoqiang@caas.cn）  
