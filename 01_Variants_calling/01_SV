@@ -53,5 +53,13 @@ i=${i/_debreak_seq.vcf/}
 iris genome_in=~/assembly_pacbio/Duroc/Duroc.fa vcf_in=${i}_debreak_seq.vcf reads_in=../${i}_pacbio.sort.bam vcf_out=${i}_polish_debreek.vcf --pacbio --rerunracon
 done
 
-
+#--------Assemblytics-----------
+ls ../accession_genome/*fa | while read id;
+do
+file=$(basename $id )
+sample=${file%%.*}
+echo $file $sample
+nucmer --maxmatch -l 500 -c 500 -t 56 /public/home/baoqi/assembly/Duroc/Duroc.fa $id --prefix=${sample}
+~/software/Assemblytics-1.2.1/scripts/Assemblytics LDR.delta LDR_self 500 50 100500
+done
 SURVIVOR merge aw.txt 1000 2 1 1 0 50 aw_merge.vcf
