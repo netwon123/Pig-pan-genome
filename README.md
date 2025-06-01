@@ -1,7 +1,7 @@
 # **Pig graph pangenome** 🐖  
 
 ### **Table of contents**  
-- **[01_Variants_calling]**
+- [01_Variants_calling]
 - **02_SV_feature**
 - **03_Population_genetic**
 - **04_Construction-of-graph_pangenome**
