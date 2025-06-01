@@ -1,0 +1,58 @@
+# make a .vg for a chromosome
+for i in {1..18} X;
+do
+~/vg construct -t 16 -r ../00_backone_genome/backone.fa -v allvariant2.vcf.gz -a -f -S -R $i -C | ~/vg ids --sort - > chr_${i}.vg;
+done
+
+# join ids across the multiple .vg files.
+~/vg ids --join --mapping pgg.output.mapping \
+chr_1.vg  \
+chr_2.vg  \
+chr_3.vg  \
+chr_4.vg  \
+chr_5.vg  \
+chr_6.vg  \
+chr_7.vg  \
+chr_8.vg  \
+chr_9.vg  \
+chr_10.vg \
+chr_11.vg \
+chr_12.vg \
+chr_13.vg \
+chr_14.vg \
+chr_15.vg \
+chr_16.vg \
+chr_17.vg \
+chr_18.vg \
+chr_X.vg  \
+
+# make xg index containing the alts paths
+~/vg index -L -t 16 -x PGG.xg \
+chr_1.vg  \
+chr_2.vg  \
+chr_3.vg  \
+chr_4.vg  \
+chr_5.vg  \
+chr_6.vg  \
+chr_7.vg  \
+chr_8.vg  \
+chr_9.vg  \
+chr_10.vg \
+chr_11.vg \
+chr_12.vg \
+chr_13.vg \
+chr_14.vg \
+chr_15.vg \
+chr_16.vg \
+chr_17.vg \
+chr_18.vg \
+chr_X.vg  \
+
+
+# prepare the snarls index, GBWT, distance
+~/vg gbwt -n 16 -g PGG.gg -o PGG.gbwt -x PGG.xg -P
+~/vg snarls -t 16 --include-trivial PGG.xg > PGG.trivial.snarls
+~/vg index -t 16 -j PGG.dist -x PGG.xg -s PGG.trivial.snarls
+
+#indexes used by the giraffe mapper 
+/public/software/singularity/bin/singularity exec --nv --network=none -n ~/vg_v1.51.0.sif vg autoindex --workflow giraffe -t 36 -r /public/home/baoqi/PGG_netwon/final_merge/backone_genome/backone.fa -M 180G -v allvariant2.vcf.gz -T ./ -p PGG
