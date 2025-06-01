@@ -1,0 +1,57 @@
+#----------pbsv---------
+ls ./*bam | while read id;
+do
+  file=$(basename $id )
+  sample=${file%%.*}
+  gatk AddOrReplaceReadGroups -I $id -O $sample.pbsv.bam --SORT_ORDER coordinate -SM $sample -LB library -PL PACBIO -PU sample
+done
+#hifi
+pbsv discover --hifi $id $sample.svsig.gz
+pbsv call --hifi -m 50 -j 56 ~/assembly/Duroc/Duroc.fa $id $sample.pbsv.vcf
+#CLR
+pbsv discover $id $sample.svsig.gz
+pbsv call -m 50 -j 56 ~/assembly/Duroc/Duroc.fa $id $sample.pbsv.vcf
+
+#----------svim---------
+svim alignment ./aw AW_own.sorted.bam ~/assembly/Duroc/Duroc.fa --min_sv_size 50 --symbolic_alleles --sample aw
+
+#----------sniffles2---------
+sniffles -t 56 --minsupport auto --minsvlen 50 --qc-stdev True --detect-large-ins True --long-dup-coverage 1.75 --sample-id $sample  --input $id --vcf $sample.vcf
+
+#----------cuteSV---------
+#hifi
+cuteSV $id  ~/assembly/Duroc/Duroc.fa $sample.cutesv.vcf ./tmp_dir -t 56 --min_size 50 --min_support 10 --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5
+#CLR
+cuteSV $id  ~/assembly/Duroc/Duroc.fa $sample.cutesv.vcf ./tmp_dir -t 56 --min_size 50 --min_support 10 --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 200 --diff_ratio_merging_DEL 0.5
+> For PacBio CLR data:
+	--max_cluster_bias_INS		100
+	--diff_ratio_merging_INS	0.3
+	--max_cluster_bias_DEL	200
+	--diff_ratio_merging_DEL	0.5
+
+> For PacBio CCS(HIFI) data:
+	--max_cluster_bias_INS		1000
+	--diff_ratio_merging_INS	0.9
+	--max_cluster_bias_DEL	1000
+	--diff_ratio_merging_DEL	0.5
+
+> For ONT data:
+	--max_cluster_bias_INS		100
+	--diff_ratio_merging_INS	0.3
+	--max_cluster_bias_DEL	100
+	--diff_ratio_merging_DEL	0.3
+> For force calling:
+	--min_mapq 			10
+
+#-------dereak-----
+debreak --bam MS_pacbio.sort.bam -o db_ms --min_size 50 --depth 111 -t 16 --rescue_large_ins --rescue_dup --poa --ref ~/assembly_pacbio/Duroc/Duroc.fa
+
+#corrected CLR reads
+ls ./*vcf | while read i;
+do
+i=${i/_debreak_seq.vcf/}
+iris genome_in=~/assembly_pacbio/Duroc/Duroc.fa vcf_in=${i}_debreak_seq.vcf reads_in=../${i}_pacbio.sort.bam vcf_out=${i}_polish_debreek.vcf --pacbio --rerunracon
+done
+
+
+SURVIVOR merge aw.txt 1000 2 1 1 0 50 aw_merge.vcf
