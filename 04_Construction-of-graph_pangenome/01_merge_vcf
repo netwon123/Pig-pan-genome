@@ -1,0 +1,65 @@
+#filted for each sv call from 4 tools (cutesv,pbsv,sniffle,debreak)
+iris genome_in=~/assembly_pacbio/Duroc/Duroc.fa vcf_in=./CLR/NX_pacbio.cutesv.vcf reads_in=NX_pacbio.sort.bam vcf_out=NX_polish_cutesv.vcf --pacbio --rerunracon
+ls ./*vcf | while read i; do grep -Ev "^NW|^NC_010462\.3|^NC_000845\.1" $i > ${i}.filted.vcf; done 
+ls ./*filted.vcf | while read i; do python filted_ins.py $i ${i}.filtedins.vcf; done
+python filted_idel_len.py $id ${id}.indel_pass.vcf ## indel len < 100Kb; grep "PASS"
+
+#filted for Assemblytics, whithout svlen filtering
+ls ./*vcf | while read i; do grep -Ev "^NW|^NC_010462\.3|^NC_000845\.1" $i > ${i}.filted.vcf; done 
+ls ./*filted.vcf | while read i; do python filted_ins.py $i ${i}.filtedins.vcf; done
+ls ./*filtedins.vcf | while read id; do awk '/^#/||$7=="PASS"' $id > ${id}_pass.vcf;done
+~/software/WGSc-master/bin/WGS --model vcf --type bed2vcf --file  ${id}.bed  --file2 ~/assembly/Duroc/Duroc_simplename.fa --file3 ${id}.fa --out ${id}.vcf
+
+#merge sv from five tools
+SURVIVOR merge tt.txt 1000 2 1 1 0 50 TT_merge_5tools.vcf
+
+#exteact long insertion (len>100kb)
+ls *pass.vcf | while read id; do ~/software/WGSc-master/bin/WGS --model vcf --type SVfilter_long --file $id --out ${id}.long.vcf; done
+
+#merge sv (<100kb) and long insertion (>100kb)
+ls ../*5tools.vcf | while read id; do python correct_for_vg_5tools.py ~/assembly/Duroc/Duroc_xy.fa $id ${id}.vg_out2; done
+ls *out2 | while read i;
+do
+i=${i/.vg_out.out2/}
+ ~/software/WGSc-master/bin/WGS --model vcf --type mergeSVs --file ${i}.vg_out.out2 --file2 loneins/${i}.assembly.vcf.filted.vcf.filtedins.vcf_pass.vcf.long.vcf --out ${i}.all.vcf
+done
+
+
+#for 24 assemblies and 3WGS
+ls *4tools.vcf | while read id; do python correct_for_vg_4tools.py ~/assembly/Duroc/Duroc_xy.fa $id  ${id}.vg_out;done
+ls ./*vcf | while read id; do python removeInfo.py -v $id -o ${id}.clean.vcf  -p ${id}; done
+ls ./*.clean.vcf | while read id; do bcftools norm -m -both $id | bcftools norm -d none -c x --fasta-ref ~/assembly/Duroc/Duroc_xy.fa | bcftools sort | bgzip > ${sample}.nosamp.norm.vcf.gz; done
+ls *norm.vcf | while read id; do bgzip -@ 8 $id ;done
+ls *gz | while read id; do tabix -f $id ;done
+
+#for pop sv call
+ls ./*vcf | while read i; do grep -Ev "^NW|^NC_010462\.3|^NC_000845\.1" $i > ${i}.filted.vcf; done 
+ls ./*filted.vcf | while read i; do python filted_ins.py $i ${i}.filtedins.vcf; done
+ls ./*filtedins.vcf | while read id; do awk '/^#/||$7=="PASS"' $id > ${id}_pass.vcf;done
+bcftools reheader -s ../sample_id.txt pop_pass_seq.filted.vcf.filtedins_fbias.vcf.pass.vcf -o pop_pass_seq.filted.vcf.filtedins_fbias.vcf.pass_rename.vcf #simple ID
+python filted_idel_len.py $id ${id}.indel_pass.vcf ## indel len < 100Kb; grep "PASS"
+python correct_for_vg_pop.py ~/assembly/Duroc/Duroc_xy.fa pop_pass_seq.filted.vcf.filtedins_fbias.vcf.pass_rename.vcf   pop.vg_out
+python removeInfo.py -v pop_pass_seq.filted.vcf.filtedins_fbias.vcf.pass2.vcf -o pop209.clean.vcf  -p pop209
+bcftools norm -m -both pop209.clean.vcf | bcftools norm -d none -c x --fasta-ref ~/assembly/Duroc/Duroc_xy.fa | bcftools sort | bgzip > pop209.norm.vcf.gz
+bgzip pop209.norm.vcf
+tabix pop209.norm.vcf.gz
+
+#for snp called from assemblies
+ls ./*header.vcf | while read i; do grep -Ev "^NW|^NC_010462\.3|^NC_000845\.1" $i > ${i}.filted.vcf; done
+ls ./*filted.vcf | while read id; do python removeInfo.py -v $id -o ${id}.clean.vcf  -p ${id}; done
+ls ./*.clean.vcf | while read id; do bcftools norm --threads 6 -m -both $id | bcftools norm --threads 6 -d none -c x --fasta-ref ~/assembly/Duroc/Duroc_xy.fa | bcftools sort -@ 6 | bgzip > ${sample}.nosamp.norm.vcf.gz; done
+ls *norm.vcf | while read id; do bgzip -@ 8 $id ;done
+ls *gz | while read id; do tabix -f $id ;done
+ls *gz > snpsample.txt
+bcftools merge --threads 6 -l snpsample.txt | bcftools norm --threads 6 -m -any -N | bcftools norm -d none --fasta-ref  ~/assembly/Duroc/Duroc_xy.fa  | bcftools sort | bgzip -@ 6 > snp.merged.vcf.gz
+
+-------------------------------------------------------------------------------------------------------------
+#merge single sv call and pop sv call
+bcftools merge -l svsample.txt | bcftools norm -m -any -N | bcftools norm -d none --fasta-ref  ~/assembly/Duroc/Duroc_xy.fa | bcftools sort | bgzip > allsv_28source.vcf.gz
+tabix -f hsvlr.vcf.gz
+~/software/WGSc-master/bin/WGS --model vcf --type dupPos --file allsv_28source.vcf.gz --out graphSV.vcf
+#merge sv and snp
+~/software/WGSc-master/bin/WGS --model vcf --type dupPosSNPs --file snp.merged.vcf.gz --file2 allsv_28source.vcf.gz --out SNPs.vcf
+bgzip SNPs.vcf
+tabix -f SNPs.vcf.gz
+bcftools merge --threads 6 allsv_28source.vcf.gz SNPs.vcf.gz | bcftools norm --threads 6 -m -any -N | bcftools norm -d none --fasta-ref  ~/assembly/Duroc/Duroc_xy.fa  | bcftools sort | bgzip -@ 6 > graphAll.merged.vcf.gz
