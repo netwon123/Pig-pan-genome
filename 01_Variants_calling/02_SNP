@@ -1,0 +1,9 @@
+pbmm2 align --preset HIFI -j 52 --sort --sort-threads 52 --sample BMA ~/assembly/Duroc/Duroc.mmi BMA_hifi.fastq.gz BMA_pbmm.bam
+#use GPU by '--nv'
+ls ./*.bam | while read id;
+do
+  file=$(basename $id )
+  sample=${file%%.*}
+  echo $file $sample
+  /public/software/singularity/bin/singularity exec --nv --network=none -n /public/software/singularity/docker-images/deepvariant-gpu.1.4.0.sif run_deepvariant --model_type=PACBIO --ref=/public/home/baoqi/assembly/Duroc/Duroc.fa --reads=$id --output_vcf=$sample.vcf.gz --num_shards=52
+done
