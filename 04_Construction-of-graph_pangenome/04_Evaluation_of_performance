@@ -1,0 +1,83 @@
+#get the different depht
+#read1.fq have 50x
+seqtk sample -s100 read1.fq 0.1 > sub_read1_10x.fq
+seqtk sample -s100 read2.fq 0.1 > sub_read2_10x.fq
+
+
+#alignment
+bwa mem -t 16 -R '@RG\tID:id01\tPL:UNKNOWN\tSM:AW_15x'  /public/home/baoqi/PGG_netwon/final_merge/backone_genome/backone.fa ../88_1_clean.fq.gz_15x.fq.gz ../88_2_clean.fq.gz_15x.fq.gz | samtools view -@ 16 -bS | samtools sort -@ 16 -o 88_clean_15x.bam
+
+ls *bam | while read id;
+do
+gatk --java-options "-Xms32G -Xmx120G -DGATK_STACKTRACE_ON_USER_EXCEPTION=true" MarkDuplicates -I $id -O ${id}_rmM.bam --REMOVE_SEQUENCING_DUPLICATES true -M ${id}.log
+done
+
+ls *_rmM.bam | while read id;
+do
+samtools index -@ 8 ${id}
+done
+
+#call snp
+ls *_rmM.bam | while read id;
+do
+gatk --java-options "-Xms32G -Xmx120G -DGATK_STACKTRACE_ON_USER_EXCEPTION=true" HaplotypeCaller -R ~/PGG_netwon/final_merge/backone_genome/backone.fa -I $id -O ${id}.vcf.gz
+done
+
+ls *gz | while read id;
+do
+bcftools norm --threads 16 -m -both $id -Oz -o ${id}.split.vcf.gz
+tabix -f ${id}.split.vcf.gz
+done
+
+
+#delly
+ls *bam | while read id;
+do
+delly call -n  -g ~/PGG_netwon/04_result/00_backone_genome/backone.fa $id -o ${id}.delly.bcf
+done
+ls *bcf | while read id;do bcftools view $id > ${id}.vcf;done
+
+#whamg
+/public/home/baoqi/software/wham/bin/whamg -x 6 -a ~/PGG_netwon/04_result/00_backone_genome/backone.fa -f $id > ${id}.whamg.bcf
+
+#lumpy
+ls *rmM.bam | while read id;
+do
+samtools view -b -F 1294 $id > ${id}.discordants.unsorted.bam
+samtools view -h $id \
+    | ~/software/lumpy-sv-0.3.1/scripts/extractSplitReads_BwaMem  -i stdin \
+    | samtools view -Sb - \
+    > ${id}.splitters.unsorted.bam
+done
+
+
+ls *.discordants.unsorted.bam | while read id;
+do
+samtools sort -@ 4 $id -o ${id}.discordants.sort.bam
+done
+
+ls *splitters.unsorted.bam | while read id;
+do
+samtools sort -@ 4  $id -o ${id}.sample.splitters.sort.bam
+done
+ls *.sort.bam_rmM.bam | while read i;
+do
+i=${i/.sort.bam_rmM.bam/}
+lumpyexpress -B ${i}.sort.bam_rmM.bam -S ${i}.sort.bam_rmM.bam.splitters.unsorted.bam.sample.splitters.sort.bam -D ${i}.sort.bam_rmM.bam.discordants.unsorted.bam.discordants.sort.bam -R ~/PGG_netwon/04_result/00_backone_genome/backone.fa -o ${i}.lumpy.vcf
+done
+
+
+#manta
+ls *bam | while read id;
+do
+python /public/home/baoqi/software/manta-1.6.0.centos6_x86_64/bin/configManta.py --bam $id \
+--referenceFasta ~/PGG_netwon/04_result/00_backone_genome/backone.fa --runDir manta_${id}
+python manta_${id}/runWorkflow.py  -m local -j 16
+done
+
+
+(1) SV
+ls *.noref.vcf.gz | while read id; do truvari bench -b PTR_merge_5tools.vcf.filted.vcf.indel.vcf.2.vcf.sort.vcf.gz -c $id -f ~/PGG_netwon/final_merge/backone_genome/backone.fa  --dup-to-ins -p 0 --passonly -s 50 -r 1000 -o ${id}_new;done
+
+(2)SNP
+using hap.py
