@@ -7,3 +7,21 @@ do
   echo $file $sample
   /public/software/singularity/bin/singularity exec --nv --network=none -n /public/software/singularity/docker-images/deepvariant-gpu.1.4.0.sif run_deepvariant --model_type=PACBIO --ref=/public/home/baoqi/assembly/Duroc/Duroc.fa --reads=$id --output_vcf=$sample.vcf.gz --num_shards=52
 done
+
+#including indel (single base level)
+ls ./*filter | while read id;
+do
+  file=$(basename $id )
+  sample=${file%%.*}
+  echo $file $sample
+  delta-filter -1 -q -r $id > $sample.filter
+  show-snps -THC  $sample.filter >  $sample.var.txt
+done
+
+ls ./*txt | while read id;
+do
+file=$(basename $id )
+sample=${file%%.*}
+echo $file $sample
+Rscript nucmer2vcf.R $id NW_018085315.1 ~/assembly/Duroc/Duroc.fa 3.1 $sample.vcf
+done
