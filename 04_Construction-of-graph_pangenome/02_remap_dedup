@@ -1,0 +1,14 @@
+#get the neardups-clusters_seq.tsv and hsvlr-fordedup-CHR.vcf
+/public/software/singularity/bin/singularity exec --network=none -n ~/sveval_v2.3.0.sif Rscript findDups.R
+### more important, DUP will convert to INS in this way
+
+#split to small size  
+split -d -l 1000 neardups-clusters_seq.tsv ./split/output --additional-suffix=.tsv
+
+#using '--bastch' 
+snakemake -s snkemake_dup --cores 4 --unlock for BATCH in seq 1 10 do echo "Batch " $BATCH #ls *cram | while read id; do samtools index $id ;done snakemake --scheduler greedy -s snkemake_dup --cores 4 --batch all=$BATCH/10 done
+
+grep "#" called_vcf/cluster-1-*.vcf >> called_merged.vcf
+grep "#" -vh called_vcf/*vcf >> called_merged.vcf
+Rscript mergeRemapResults.R
+Rscript prepareVcf.R
