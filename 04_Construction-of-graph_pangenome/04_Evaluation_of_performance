@@ -1,8 +1,7 @@
 #get the different depht
 #read1.fq have 50x
-seqtk sample -s100 read1.fq 0.1 > sub_read1_10x.fq
-seqtk sample -s100 read2.fq 0.1 > sub_read2_10x.fq
-
+perl ./simuG/simuG.pl -refseq ~/01_project_PGG/04_result/00_backone_genome/backone.fa -indel_vcf Panindel_sort.vcf -prefix simu_genome
+art_illumina -ss HS25 -sam -i ../simu_genome.simseq.genome.fa -p -l 150 -f 15 -m 200 -s 10 -o simu_15x
 
 #alignment
 bwa mem -t 16 -R '@RG\tID:id01\tPL:UNKNOWN\tSM:AW_15x'  /public/home/baoqi/PGG_netwon/final_merge/backone_genome/backone.fa ../88_1_clean.fq.gz_15x.fq.gz ../88_2_clean.fq.gz_15x.fq.gz | samtools view -@ 16 -bS | samtools sort -@ 16 -o 88_clean_15x.bam
