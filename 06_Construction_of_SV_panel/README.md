@@ -24,15 +24,7 @@ tabix -p vcf bq_298.genome.snp.bi-allele.vcf.gz
 ```
 
 ### 1.3 Merge Multiple SNP VCFs
-```bash
-#!/bin/bash
-#SBATCH --job-name=snp_filter
-#SBATCH --partition=low,big,amd
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=10
-#SBATCH --error=%j.err
-#SBATCH --output=%j.out
-
+```
 bcftools merge --threads 10 bq_298.genome.snp.bi-allele.vcf.gz \
     bq_42.genome.bi-allele.vcf.gz \
     ygq_953.genome.snps.vcf.gz \
