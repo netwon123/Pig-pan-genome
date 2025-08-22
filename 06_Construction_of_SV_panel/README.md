@@ -90,19 +90,7 @@ tabix -p vcf panel_2337.chr1-18.sv.only_bi.vcf.gz
 
 ## 3. Merge SNP and SV Per Chromosome
 
-```bash
-#!/bin/bash
-#SBATCH --job-name=panel_2337
-#SBATCH --partition=low,big,amd
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=20
-#SBATCH --mem=200G
-#SBATCH --error=chr%a_%j.err
-#SBATCH --output=chr%a_%j.out
-#SBATCH --array=14
-
-CHROM=$SLURM_ARRAY_TASK_ID
-
+```
 # SNP
 bcftools view --threads 10 -v snps -m2 -M2 -S 2337_panel.sample.sorted.txt \
     -r ${CHROM} panel_3376.genome.snps.reheadered.vcf.gz \
@@ -157,16 +145,7 @@ tabix -p vcf panel_2337.chr${CHROM}.snp.sv.phased.final_sorted.vcf.gz
 
 ## 5. HiFi SNP Imputation
 
-```bash
-#!/bin/bash
-#SBATCH --job-name=hifi_imputed
-#SBATCH --partition=low,big,amd
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=10
-#SBATCH --error=chr%a_%j.err
-#SBATCH --output=chr%a_%j.out
-#SBATCH --array=16,17,18
-
+```
 CHROM=$SLURM_ARRAY_TASK_ID
 
 java -jar beagle.jar \
